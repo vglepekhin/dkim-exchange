@@ -73,6 +73,13 @@ namespace Exchange.DkimSigner
 			}
 			finally
 			{
+				// Fix for Event 1057 "Agent went async but did not call Resume on the new thread"
+				// per Microsoft KB: Resume() must be called RIGHT BEFORE Complete()
+				// to properly signal that the worker thread finished async processing.
+				// Without Resume(), Exchange logs Event 1057 and in race-conditions
+				// the DKIM signature may not be applied (e.g. forwarded mail with attachments).
+				// See: https://learn.microsoft.com/en-us/archive/blogs/dvespa/agent-went-async-but-did-not-call-resume-event-id-1057
+				agentAsyncContext.Resume();
 				agentAsyncContext.Complete();
 				agentAsyncContext = null;
 			}
